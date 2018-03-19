@@ -2,10 +2,16 @@
 ##########!/usr/bin/env python3
 
 import argparse
+import json
+
+import eyeD3
+import os
+
+from __builtin__ import file
+
 import log
 import SpotifyAPI
 import youtubeDownloader
-
 
 #def main():
 # Parse arguments.
@@ -40,9 +46,62 @@ for playlist in playlists:
 scelta = input("Scegli la playlist che vuoi scaricare: ")
 playlist_scelta = playlists[int(scelta)];
 
+ambiguos = []
+not_found = []
+
 for track in playlist_scelta['tracks']:
-    link = youtubeDownloader.youtube_search(track)
-    print (link)
+    track['yt_videos'] = youtubeDownloader.youtube_search(track)
+
+    for filename in os.listdir(youtubeDownloader.MUSIC_FOLDER):
+        if eyeD3.isMp3File(filename):
+            audioFile = eyeD3.Mp3AudioFile(filename)
+            tag = audioFile.getTag()
+            if json.loads(tag['comments'])['spotify_track_id'] ==  track['uri']:
+                track['file_path'] = filename
+            elif tag['title'] == track ['title']:
+                track['file_path'] = filename
+                ambiguos.append(track)
+            else:
+                for video in track['yt_videos']:
+                    if (youtubeDownloader.getVideoDuration(video) >= track['duration_ms']-1) and \
+                            (youtubeDownloader.getVideoDuration(video) <= track['duration_ms']+1):
+                        track['file_path'] = youtubeDownloader.downloadYoutube(video)
+                    else:
+                        not_found.append(track)
+
+for track in ambiguos:
+    scelta = input("Il brano della playlist: {titolo: " + track['title'] + " , artisti: " +
+          ', '.join([artist['name'] for artist in track['track']['artists']]) + "} corrisponde al file: " +
+          track['file_path'] + "?[y|N] ")
+    if not(scelta == 'y' or scelta == 'Y'):
+        track['file_path'] = ""
+        not_found.append(track)
+for track in not_found:
+    print("Il brano della playlist: {titolo: " + track['title'] + " , artisti: " +
+          ', '.join([artist['name'] for artist in track['track']['artists']]) + "} non trovata")
+    print("1) Indica il percorso contenente il file")
+    print("2) Indica l'URL youtube dal quale estrarre la canzone")
+    print("3) Rimuovi la canzone dalla plyalist")
+    scelta = input("Scegli un opzione: ")
+    if scelta == 1:
+        track['file_path'] = input("Percorso del file: ")
+    elif scelta == 2:
+        track['file_path'] = youtubeDownloader.downloadYoutube(input("URL youtube: "))
+    elif scelta == 3:
+        playlist_scelta.remove(track)
+
+#METTO TUTTI I META TAG (ANCHE IL TRACK_ID DI SPOTIFY NEI COMMENTI)
+#CREO LA PLAYLIST
+#DICO FINE
+
+
+
+
+
+
+
+
+
 #                 f.write()
 
 #downloadYoutube(link)

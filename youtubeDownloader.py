@@ -1,12 +1,12 @@
 #!/usr/bin/python
-import json
-
+import subprocess
 from googleapiclient.discovery import build
 #from apiclient.errors import HttpError
 #from oauth2client.tools import argparser
 
+import json
 import urllib
-from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
 
 # Set DEVELOPER_KEY to the API key value from the APIs & auth > Registered apps
 # tab of
@@ -16,46 +16,43 @@ DEVELOPER_KEY = "AIzaSyDOZnawRC1wEPErZmSyLYWdTplXKX3Q_oo"
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
-def youtube_search(track):
-  youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-    developerKey=DEVELOPER_KEY)
+MUSIC_FOLDER = "/home/broskh/Musica/"
 
-  textToSearch = '{name}\t{artists}\taudio'.format(
+def youtube_search(track):
+    youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
+                    developerKey=DEVELOPER_KEY)
+
+    textToSearch = '{name}\t{artists}\taudio'.format(
         name=track['track']['name'],
         artists=', '.join([artist['name'] for artist in track['track']['artists']])
     )
 
   # Call the search.list method to retrieve results matching the specified
   # query term.
-  search_response = youtube.search().list(
-    q=textToSearch,
-    part="id,snippet",
-    maxResults=50
-  ).execute()
+    search_response = youtube.search().list(
+            q=textToSearch,
+            part="id,snippet",
+            maxResults=50
+        ).execute()
 
-  videos = []
+    videos = []
 
   # Add each result to the appropriate list, and then display the lists of
   # matching videos, channels, and playlists.
-  for search_result in search_response.get("items", []):
-    if search_result["id"]["kind"] == "youtube#video":
-        print(str(track['duration_ms']) + "\t\t" + str(getVideoDuration(search_result["id"]["videoId"])))
-        if track['duration_ms'] == getVideoDuration(search_result["id"]["videoId"]):
-            print("bella")
-
-        # videos.append("%s (%s)" % (search_result["snippet"]["title"],
-        #                          search_result["id"]["videoId"]))
-
-def searchYoutube(track):
-  textToSearch = '{name}\t{artists}'.format(
-        name=track['track']['name'],
-        artists=', '.join([artist['name'] for artist in track['track']['artists']])
-    )
-  query = urllib.parse.quote(textToSearch)
-  url = "https://www.youtube.com/results?search_query=" + query
-  response = urllib.request.urlopen(url)
-  html = response.read()
-  soup = BeautifulSoup(html, "html.parser")
+    for search_result in search_response.get("items", []):
+        if search_result["id"]["kind"] == "youtube#video":
+            videos.append("%s" % (search_result["id"]["videoId"]))
+    return videos
+# def searchYoutube(track):
+#   textToSearch = '{name}\t{artists}'.format(
+#         name=track['track']['name'],
+#         artists=', '.join([artist['name'] for artist in track['track']['artists']])
+#     )
+#   query = urllib.parse.quote(textToSearch)
+#   url = "https://www.youtube.com/results?search_query=" + query
+#   response = urllib.request.urlopen(url)
+#   html = response.read()
+#   soup = BeautifulSoup(html, "html.parser")
   #we return the first result
   # return "https://youtube.com" + soup.findAll(attrs={'class':'yt-uix-tile-link'})[0]['href']
 
@@ -69,6 +66,14 @@ def getVideoDuration(videoId):
     contentDetails = all_data[0]['contentDetails']
     duration = contentDetails['duration']
     return duration
+
+def downloadYoutube(yt_id):
+    """ downloading the track """
+    link = "https://www.youtube.com/watch?v=" + yt_id
+    filename = MUSIC_FOLDER + yt_id
+    proc = subprocess.Popen('youtube-dl -o ' + filename + ' --extract-audio --audio-format mp3 '+ link, shell=True, stdout=subprocess.PIPE)
+    tmp = proc.stdout.read()
+    return filename
 
 # link = searchYoutube(name)
 # downloadYoutube(link)
