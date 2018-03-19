@@ -20,7 +20,7 @@ MUSIC_FOLDER = "/home/broskh/Musica/"
 
 def youtube_search(track):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-                    developerKey=DEVELOPER_KEY)
+                    developerKey=DEVELOPER_KEY, cache_discovery=False)
 
     textToSearch = '{name}\t{artists}\taudio'.format(
         name=track['track']['name'],

@@ -4,10 +4,8 @@
 import argparse
 import json
 
-import eyeD3
+import eyed3
 import os
-
-from __builtin__ import file
 
 import log
 import SpotifyAPI
@@ -53,8 +51,8 @@ for track in playlist_scelta['tracks']:
     track['yt_videos'] = youtubeDownloader.youtube_search(track)
 
     for filename in os.listdir(youtubeDownloader.MUSIC_FOLDER):
-        if eyeD3.isMp3File(filename):
-            audioFile = eyeD3.Mp3AudioFile(filename)
+        if filename.lower().endswith(('.mp3')):
+            audioFile = eyed3.load(filename)
             tag = audioFile.getTag()
             if json.loads(tag['comments'])['spotify_track_id'] ==  track['uri']:
                 track['file_path'] = filename
@@ -90,41 +88,17 @@ for track in not_found:
     elif scelta == 3:
         playlist_scelta.remove(track)
 
-#METTO TUTTI I META TAG (ANCHE IL TRACK_ID DI SPOTIFY NEI COMMENTI)
-#CREO LA PLAYLIST
-#DICO FINE
+of = open(playlist_scelta['name'] + ".m3u", 'w')
+of.write("#EXTM3U\n")
+for track in playlist_scelta:
+    audioFile = eyed3.load(track['file_path'])
+    tag = audioFile.getTag()
+    tag['title'] = track['title']
+    tag['artists'] = ', '.join([artist['name'] for artist in track['track']['artists']])
+    tag['album'] = track['album']
+    tag['comments'] = "{'spotify_track_id': " + track['uri'] + "}"
+    #ALTRI META?
 
-
-
-
-
-
-
-
-
-#                 f.write()
-
-#downloadYoutube(link)
-# Write the file.
-# with open(args.file, 'w', encoding='utf-8') as f:
-#     # JSON file.
-#     if args.format == 'json':
-#         json.dump(playlists, f)
-#
-#     # Tab-separated file.
-#     elif args.format == 'txt':
-#         for playlist in playlists:
-#             f.write(playlist['name'] + '\r\n')
-#             for track in playlist['tracks']:
-#                 f.write('{name}\t{artists}\t{album}\t{uri}\r\n'.format(
-#                     uri=track['track']['uri'],
-#                     name=track['track']['name'],
-#                     artists=', '.join([artist['name'] for artist in track['track']['artists']]),
-#                     album=track['track']['album']['name']
-#                 ))
-#             f.write('\r\n')
-# log.print('Wrote file: ' + args.file)
-
-
-#if __name__ == '__main__':
-#    main()
+    of.write("#EXTINF:%s,%s\n" % (track['length'], track['file_path']))
+    of.write(track['file_path'] + "\n")
+of.close()

@@ -57,7 +57,7 @@ class SpotifyAPI:
         # List all playlists and all track in each playlist.
         playlists = self.list('users/{user_id}/playlists'.format(user_id=self.user['id']), {'limit': 50})  # 50
         for playlist in playlists:
-            log.print('Loading playlist: {name} ({tracks[total]} songs)'.format(**playlist))
+            # log.print('Loading playlist: {name} ({tracks[total]} songs)'.format(**playlist))
             playlist['tracks'] = self.list(playlist['tracks']['href'], {'limit': 100})  # 100
         return playlists
 
