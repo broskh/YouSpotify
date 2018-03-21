@@ -4,9 +4,12 @@
 import argparse
 import json
 
+import eyed3
 import mp3_tagger
 import os
-from mutagen.easyid3 import EasyID3
+
+from eyed3.id3 import ID3_V2_3
+
 import log
 import SpotifyAPI
 import youtubeDownloader
@@ -53,18 +56,16 @@ for track in playlist_scelta['tracks']:
     trovato = None
     for filename in os.listdir(youtubeDownloader.MUSIC_FOLDER):
         if filename.lower().endswith(('.mp3')):
-            audioFile = mp3_tagger.MP3File(youtubeDownloader.MUSIC_FOLDER + filename)
-            audioFile.set_version(mp3_tagger.VERSION_1)
-            if audioFile.comment == track['track']['uri']:
+            audioFile = eyed3.load(youtubeDownloader.MUSIC_FOLDER + filename)
+            if audioFile.tag.comments == track['track']['uri']:
                 track['file_path'] = filename
                 trovato = True
                 break
     if not(trovato):
         for filename in os.listdir(youtubeDownloader.MUSIC_FOLDER):
             if filename.lower().endswith(('.mp3')):
-                audioFile = mp3_tagger.MP3File(youtubeDownloader.MUSIC_FOLDER + filename)
-                audioFile.set_version(mp3_tagger.VERSION_1)
-                if audioFile.song == track['track']['name']:
+                eyed3.load(youtubeDownloader.MUSIC_FOLDER + filename)
+                if audioFile.tag.title == track['track']['name']:
                     track['file_path'] = filename
                     ambiguos.append(track)
                     trovato = True
@@ -110,23 +111,33 @@ for track in not_found:
 of = open(youtubeDownloader.MUSIC_FOLDER + playlist_scelta['name'] + ".m3u", 'w')
 of.write("#EXTM3U\n")
 for track in playlist_scelta['tracks']:
-    audioFile = mp3_tagger.MP3File(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
-    audioFile.song = track['track']['name']
-    print(track['track']['name'])
-    print(audioFile.song)
-    audioFile.artist = ', '.join([artist['name'] for artist in track['track']['artists']])
-    print(', '.join([artist['name'] for artist in track['track']['artists']]))
-    print(audioFile.artist)
-    audioFile.album = track['track']['album']['name']
-    print(track['track']['album']['name'])
-    print(audioFile.album)
-    audioFile.comment = track['track']['uri']
-    print(track['track']['uri'])
-    print(audioFile.comment)
-    audioFile.track = str(track['track']['track_number'])
-    print(str(track['track']['track_number']))
-    print(audioFile.track)
-    audioFile.save()
+    # audioFile = mp3_tagger.MP3File(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
+    # audioFile.song = track['track']['name']
+    # print(track['track']['name'])
+    # print(audioFile.song)
+    # audioFile.artist = ', '.join([artist['name'] for artist in track['track']['artists']])
+    # print(', '.join([artist['name'] for artist in track['track']['artists']]))
+    # print(audioFile.artist)
+    # audioFile.album = track['track']['album']['name']
+    # print(track['track']['album']['name'])
+    # print(audioFile.album)
+    # audioFile.comment = track['track']['uri']
+    # print(track['track']['uri'])
+    # print(audioFile.comment)
+    # audioFile.track = str(track['track']['track_number'])
+    # print(str(track['track']['track_number']))
+    # print(audioFile.track)
+    # audioFile.save()
+
+    audiofile = eyed3.load(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
+    audioFile.initTag()
+    audiofile.tag.artist = ', '.join([artist['name'] for artist in track['track']['artists']])
+    audiofile.tag.album = track['track']['album']['name']
+    audiofile.tag.title = track['track']['name']
+    audiofile.tag.track_num = track['track']['track_number']
+    audioFile.tag.comments.set("Miao");
+    audiofile.tag.save()
+    print(audioFile.tag.comments)
 
     #ALTRI META?
 
