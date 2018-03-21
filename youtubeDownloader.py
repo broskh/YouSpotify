@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import re
 import subprocess
 from googleapiclient.discovery import build
 #from apiclient.errors import HttpError
@@ -32,7 +33,7 @@ def youtube_search(track):
     search_response = youtube.search().list(
             q=textToSearch,
             part="id,snippet",
-            maxResults=50
+            maxResults=10#20
         ).execute()
 
     videos = []
@@ -57,23 +58,38 @@ def youtube_search(track):
   # return "https://youtube.com" + soup.findAll(attrs={'class':'yt-uix-tile-link'})[0]['href']
 
 def getVideoDuration(videoId):
-    video_id = "6_zn4WCeX0o"
-    api_key = "Your API KEY replace it!"
     searchUrl = "https://www.googleapis.com/youtube/v3/videos?id=" + videoId + "&key=" + DEVELOPER_KEY + "&part=contentDetails"
-    response = urllib.urlopen(searchUrl).read()
+    response = urllib.request.urlopen(searchUrl).read().decode('utf-8')
     data = json.loads(response)
     all_data = data['items']
     contentDetails = all_data[0]['contentDetails']
     duration = contentDetails['duration']
-    return duration
+    min_regex = re.compile("[0-9]+(?=M)")
+    min_search = min_regex.search(duration)
+    sec_regex = re.compile("[0-9]+(?=S)")
+    sec_search = sec_regex.search(duration)
+    if min_search:
+        minutes = int(min_search.group(0))
+    else:
+        minutes = 0
+    if sec_search:
+        seconds = int(sec_search.group(0))
+    else:
+        seconds = 0
+    return minutes*60000 + seconds*1000
 
-def downloadYoutube(yt_id):
+def downloadYoutube(yt_id, filename):
     """ downloading the track """
     link = "https://www.youtube.com/watch?v=" + yt_id
-    filename = MUSIC_FOLDER + yt_id
-    proc = subprocess.Popen('youtube-dl -o ' + filename + ' --extract-audio --audio-format mp3 '+ link, shell=True, stdout=subprocess.PIPE)
+    path = MUSIC_FOLDER + filename + ".%(ext)s"
+    # p = Popen(['bash'], stdin=PIPE, stdout=PIPE)
+    command = 'youtube-dl -o \"' + path + '\" --extract-audio --audio-format mp3 ' + link + '\n';
+    # print("COMMAND DOWNLOAD: " + command)
+    # p.stdin.write(command.encode('utf-8'))
+    # print(p.stdout.readline())
+    proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
     tmp = proc.stdout.read()
-    return filename
+    #-------->>>>>>>><CONTROLLO TRACCIA MUTA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<---------------
 
 # link = searchYoutube(name)
 # downloadYoutube(link)
