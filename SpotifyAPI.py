@@ -61,6 +61,9 @@ class SpotifyAPI:
             playlist['tracks'] = self.list(playlist['tracks']['href'], {'limit': 100})  # 100
         return playlists
 
+    def getAlbum (self, album):
+        return self.get(album['href'])
+
     def getUser(self):
         return self.user
 

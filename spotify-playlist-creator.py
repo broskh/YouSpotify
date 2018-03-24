@@ -4,6 +4,8 @@
 import argparse
 import os
 import taglib
+import eyed3
+from urllib.request import urlopen
 
 import log
 import SpotifyAPI
@@ -107,19 +109,24 @@ for track in not_found:
 of = open(youtubeDownloader.MUSIC_FOLDER + playlist_scelta['name'] + ".m3u", 'w')
 of.write("#EXTM3U\n")
 for track in playlist_scelta['tracks']:
+    fullAlbum = spotify.getAlbum(track['track']['album'])
     song = taglib.File(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
     song.tags['TITLE'] = track['track']['name']
     song.tags['ARTIST'] = ', '.join([artist['name'] for artist in track['track']['artists']])
     song.tags['ALBUM'] = track['track']['album']['name']
-    song.tags['TRACKNUMBER'] = track['track']['track_number'] + "/" + track['track']['album']['tracks'][-1]['track_number']
-    #AGGIUNGERE DISC NUNBER E DISC MAX, CORRETTO TRACK NUMBER?
+    song.tags['TRACKNUMBER'] = str(track['track']['track_number']) + "/" + str(fullAlbum['tracks']['items'][-1]['track_number'])
+    song.tags['DISCNUMBER'] = str(track['track']['disc_number'])
     song.tags['COMMENT'] = track['track']['uri']
-    song.tags['GENRE'] = ', '.join(track['track']['album']['genres'])
-    song.tags['YEAR'] = track['track']['album']['release_date']
+    song.tags['GENRE'] = ', '.join(fullAlbum['genres'])
+    song.tags['DATE'] = track['track']['album']['release_date']
     song.tags['ALBUMARTISTS'] = ', '.join([artist['name'] for artist in track['track']['album']['artists']])
     song.save()
+    song = eyed3.load(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
+    image = urlopen(track['track']['album']['images'][0]['url'])
+    song.tag.images.set(3, image.read(), 'image/jpeg')
+    song.tag.save()
 
-    # ALTRI META?
+    #traccia muta
 
     of.write("#EXTINF:%s,%s\n" % (track['track']['duration_ms'], track['file_path']))
     of.write(track['file_path'] + "\n")
