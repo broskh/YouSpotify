@@ -4,8 +4,6 @@
 import argparse
 import os
 import taglib
-import eyed3
-from urllib.request import urlopen
 
 import log
 import SpotifyAPI
@@ -72,11 +70,12 @@ for track in playlist_scelta['tracks']:
         for video in track['yt_videos']:
             duration_yt = youtubeDownloader.getVideoDuration(video)
             if (duration_yt >= track['track']['duration_ms'] - 3000) and \
-                    (duration_yt <= track['track']['duration_ms'] + 3000):  # match con video di 2 secondi + o - lunghi
+                    (duration_yt <= track['track']['duration_ms'] + 3000):  # match con video di 3 secondi + o - lunghi
                 filename = ', '.join([artist['name'] for artist in track['track']['artists']]) + " - " \
                            + track['track']['name']
                 youtubeDownloader.downloadYoutube(video, filename)
                 track['file_path'] = filename + ".mp3"
+                spotify.tagFile(track)
                 trovato = True
                 break
     if not (trovato):
@@ -89,45 +88,37 @@ for track in ambiguos:
     if not (scelta == 'y' or scelta == 'Y'):
         track['file_path'] = ""
         not_found.append(track)
+    else:
+        spotify.tagFile(track)
 for track in not_found:
     print("Il brano della playlist: {titolo: " + track['track']['name'] + " , artisti: " +
           ', '.join([artist['name'] for artist in track['track']['artists']]) + "} non trovata")
-    print("1) Indica il percorso contenente il file")
-    print("2) Indica l'URL youtube dal quale estrarre la canzone")
-    print("3) Rimuovi la canzone dalla plyalist")
-    scelta = input("Scegli un opzione: ")
-    if scelta == 1:
-        track['file_path'] = input("Nome del file: ")
-    elif scelta == 2:
-        filename = ', '.join([artist['name'] for artist in track['track']['artists']]) + " - " + track['track']['name']
-        codice_yt = input("Inserisci il codice del video youtube: ")
-        youtubeDownloader.downloadYoutube(codice_yt, filename)
-        track['file_path'] = filename + ".mp3"
-    elif scelta == 3:
-        playlist_scelta.remove(track)
+    print("1) Indica il file all'interno del filesystem")
+    print("2) Indica il video youtube dal quale estrarre la canzone")
+    print("3) Rimuovi la canzone dalla playlist")
+    answer = False
+    while answer == False:
+        scelta = input("Scegli un opzione: ")
+        scelta = int(scelta)
+        if scelta == 1:
+            answer = True
+            track['file_path'] = input("Nome del file: ")
+            spotify.tagFile(track)
+        elif scelta == 2:
+            answer = True
+            filename = ', '.join([artist['name'] for artist in track['track']['artists']]) + " - " + track['track']['name']
+            codice_yt = input("Inserisci il codice del video youtube: ")
+            youtubeDownloader.downloadYoutube(codice_yt, filename)
+            track['file_path'] = filename + ".mp3"
+            spotify.tagFile(track)
+        elif scelta == 3:
+            playlist_scelta.remove(track)
+        else:
+            print("Scelta errata")
 
 of = open(youtubeDownloader.MUSIC_FOLDER + playlist_scelta['name'] + ".m3u", 'w')
 of.write("#EXTM3U\n")
 for track in playlist_scelta['tracks']:
-    fullAlbum = spotify.getAlbum(track['track']['album'])
-    song = taglib.File(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
-    song.tags['TITLE'] = track['track']['name']
-    song.tags['ARTIST'] = ', '.join([artist['name'] for artist in track['track']['artists']])
-    song.tags['ALBUM'] = track['track']['album']['name']
-    song.tags['TRACKNUMBER'] = str(track['track']['track_number']) + "/" + str(fullAlbum['tracks']['items'][-1]['track_number'])
-    song.tags['DISCNUMBER'] = str(track['track']['disc_number'])
-    song.tags['COMMENT'] = track['track']['uri']
-    song.tags['GENRE'] = ', '.join(fullAlbum['genres'])
-    song.tags['DATE'] = track['track']['album']['release_date']
-    song.tags['ALBUMARTISTS'] = ', '.join([artist['name'] for artist in track['track']['album']['artists']])
-    song.save()
-    song = eyed3.load(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
-    image = urlopen(track['track']['album']['images'][0]['url'])
-    song.tag.images.set(3, image.read(), 'image/jpeg')
-    song.tag.save()
-
-    #traccia muta
-
     of.write("#EXTINF:%s,%s\n" % (track['track']['duration_ms'], track['file_path']))
     of.write(track['file_path'] + "\n")
 of.close()

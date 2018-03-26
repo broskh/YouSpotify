@@ -2,6 +2,9 @@ import codecs
 import http.client
 import http.server
 import json
+import taglib
+import eyed3
+from urllib.request import urlopen
 import log
 import re
 import sys
@@ -10,6 +13,9 @@ import urllib.parse
 import urllib.request
 import webbrowser
 import time
+
+import youtubeDownloader
+
 
 class SpotifyAPI:
     # Requires an OAuth token.
@@ -66,6 +72,25 @@ class SpotifyAPI:
 
     def getUser(self):
         return self.user
+
+    def tagFile(self, track):
+        fullAlbum = self.getAlbum(track['track']['album'])
+        song = taglib.File(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
+        song.tags['TITLE'] = track['track']['name']
+        song.tags['ARTIST'] = ', '.join([artist['name'] for artist in track['track']['artists']])
+        song.tags['ALBUM'] = track['track']['album']['name']
+        song.tags['TRACKNUMBER'] = str(track['track']['track_number']) + "/" + str(
+            fullAlbum['tracks']['items'][-1]['track_number'])
+        song.tags['DISCNUMBER'] = str(track['track']['disc_number'])
+        song.tags['COMMENT'] = track['track']['uri']
+        song.tags['GENRE'] = ', '.join(fullAlbum['genres'])
+        song.tags['DATE'] = track['track']['album']['release_date']
+        song.tags['ALBUMARTISTS'] = ', '.join([artist['name'] for artist in track['track']['album']['artists']])
+        song.save()
+        song = eyed3.load(youtubeDownloader.MUSIC_FOLDER + track['file_path'])
+        image = urlopen(track['track']['album']['images'][0]['url'])
+        song.tag.images.set(3, image.read(), 'image/jpeg')
+        song.tag.save()
 
     class _AuthorizationServer(http.server.HTTPServer):
         def __init__(self, host, port):

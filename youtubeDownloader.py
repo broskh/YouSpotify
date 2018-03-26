@@ -23,7 +23,7 @@ def youtube_search(track):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
                     developerKey=DEVELOPER_KEY, cache_discovery=False)
 
-    textToSearch = '{name}\t{artists}\taudio'.format(
+    textToSearch = '{name}\t{artists}\t'.format(
         name=track['track']['name'],
         artists=', '.join([artist['name'] for artist in track['track']['artists']])
     )
@@ -33,11 +33,10 @@ def youtube_search(track):
     search_response = youtube.search().list(
             q=textToSearch,
             part="id,snippet",
-            maxResults=10#20
+            maxResults=15#20
         ).execute()
 
     videos = []
-
   # Add each result to the appropriate list, and then display the lists of
   # matching videos, channels, and playlists.
     for search_result in search_response.get("items", []):
