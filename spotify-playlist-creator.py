@@ -16,8 +16,6 @@ parser = argparse.ArgumentParser(description='Exports your Spotify playlists. By
                                              + ' an OAuth token with the --token option.')
 parser.add_argument('--token', metavar='OAUTH_TOKEN', help='use a Spotify OAuth token (requires the '
                                                            + '`playlist-read-private` permission)')
-parser.add_argument('--format', default='txt', choices=['json', 'txt'], help='output format (default: txt)')
-parser.add_argument('file', help='output filename', nargs='?')
 args = parser.parse_args()
 
 # If they didn't give a filename, then just prompt them. (They probably just double-clicked.)
@@ -117,8 +115,6 @@ for track in not_found:
             print("Scelta errata")
 
 of = open(youtubeDownloader.MUSIC_FOLDER + playlist_scelta['name'] + ".m3u", 'w')
-of.write("#EXTM3U\n")
 for track in playlist_scelta['tracks']:
-    of.write("#EXTINF:%s,%s\n" % (track['track']['duration_ms'], track['file_path']))
     of.write(track['file_path'] + "\n")
 of.close()
