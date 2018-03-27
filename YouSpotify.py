@@ -5,9 +5,7 @@ import argparse
 import os
 import taglib
 
-import log
-import SpotifyAPI
-import youtubeDownloader
+from util import log, spotify, youtube
 
 # def main():
 # Parse arguments.
@@ -24,15 +22,15 @@ args = parser.parse_args()
 
 # Log into the Spotify API.
 if args.token:
-    spotify = SpotifyAPI(args.token)
+    spotify = spotify(args.token)
 else:
-    spotify = SpotifyAPI.authorize(client_id='5c098bcc800e45d49e476265bc9b6934', scope='playlist-read-private')
+    spotify = spotify.authorize(client_id='5c098bcc800e45d49e476265bc9b6934', scope='playlist-read-private')
 
 # Get the ID of the logged in user.
 log.print('Logged in as {display_name} ({id})'.format(**spotify.getUser()))
 
 playlists = spotify.getPlaylists()
-
+log.
 i = 0
 for playlist in playlists:
     print(str(i) + ") " + playlist['name'])
@@ -45,18 +43,18 @@ not_found = []
 
 for track in playlist_scelta['tracks']:
     trovato = None
-    for filename in os.listdir(youtubeDownloader.MUSIC_FOLDER):
+    for filename in os.listdir(youtube.MUSIC_FOLDER):
         if filename.lower().endswith('.mp3'):
-            song = taglib.File(youtubeDownloader.MUSIC_FOLDER + filename)
+            song = taglib.File(youtube.MUSIC_FOLDER + filename)
             if 'COMMENT' in song.tags:
                 if song.tags['COMMENT'][0] == track['track']['uri']:
                     track['file_path'] = filename
                     trovato = True
                     break
     if not trovato:
-        for filename in os.listdir(youtubeDownloader.MUSIC_FOLDER):
+        for filename in os.listdir(youtube.MUSIC_FOLDER):
             if filename.lower().endswith(('.mp3')):
-                song = taglib.File(youtubeDownloader.MUSIC_FOLDER + filename)
+                song = taglib.File(youtube.MUSIC_FOLDER + filename)
                 if 'TITLE' in song.tags:
                     if track['track']['name'] in song.tags['TITLE'][0]:
                         track['file_path'] = filename
@@ -64,14 +62,14 @@ for track in playlist_scelta['tracks']:
                         trovato = True
                         break
     if not trovato:
-        track['yt_videos'] = youtubeDownloader.youtube_search(track)
+        track['yt_videos'] = youtube.youtube_search(track)
         for video in track['yt_videos']:
-            duration_yt = youtubeDownloader.getVideoDuration(video)
+            duration_yt = youtube.getVideoDuration(video)
             if (duration_yt >= track['track']['duration_ms'] - 3000) and \
                     (duration_yt <= track['track']['duration_ms'] + 3000):  # match con video di 3 secondi + o - lunghi
                 filename = ', '.join([artist['name'] for artist in track['track']['artists']]) + " - " \
                            + track['track']['name']
-                youtubeDownloader.downloadYoutube(video, filename)
+                youtube.downloadYoutube(video, filename)
                 track['file_path'] = filename + ".mp3"
                 spotify.tagFile(track)
                 trovato = True
@@ -106,7 +104,7 @@ for track in not_found:
             answer = True
             filename = ', '.join([artist['name'] for artist in track['track']['artists']]) + " - " + track['track']['name']
             codice_yt = input("Inserisci il codice del video youtube: ")
-            youtubeDownloader.downloadYoutube(codice_yt, filename)
+            youtube.downloadYoutube(codice_yt, filename)
             track['file_path'] = filename + ".mp3"
             spotify.tagFile(track)
         elif scelta == 3:
@@ -114,7 +112,7 @@ for track in not_found:
         else:
             print("Scelta errata")
 
-of = open(youtubeDownloader.MUSIC_FOLDER + playlist_scelta['name'] + ".m3u", 'w')
+of = open(youtube.MUSIC_FOLDER + playlist_scelta['name'] + ".m3u", 'w')
 for track in playlist_scelta['tracks']:
     of.write(track['file_path'] + "\n")
 of.close()
