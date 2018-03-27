@@ -1,1 +1,1 @@
-# spotify-playlist-creator
+# YouSpotify
