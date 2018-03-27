@@ -2,12 +2,9 @@
 import re
 import subprocess
 from googleapiclient.discovery import build
-#from apiclient.errors import HttpError
-#from oauth2client.tools import argparser
 
 import json
 import urllib
-# from bs4 import BeautifulSoup
 
 # Set DEVELOPER_KEY to the API key value from the APIs & auth > Registered apps
 # tab of
@@ -30,7 +27,7 @@ def youtube_search(track):
 
   # Call the search.list method to retrieve results matching the specified
   # query term.
-    search_response = youtube.search().list(
+    search_response = youtube.search().get_list(
             q=textToSearch,
             part="id,snippet",
             maxResults=15#20
@@ -43,18 +40,6 @@ def youtube_search(track):
         if search_result["id"]["kind"] == "youtube#video":
             videos.append("%s" % (search_result["id"]["videoId"]))
     return videos
-# def searchYoutube(track):
-#   textToSearch = '{name}\t{artists}'.format(
-#         name=track['track']['name'],
-#         artists=', '.join([artist['name'] for artist in track['track']['artists']])
-#     )
-#   query = urllib.parse.quote(textToSearch)
-#   url = "https://www.youtube.com/results?search_query=" + query
-#   response = urllib.request.urlopen(url)
-#   html = response.read()
-#   soup = BeautifulSoup(html, "html.parser")
-  #we return the first result
-  # return "https://youtube.com" + soup.findAll(attrs={'class':'yt-uix-tile-link'})[0]['href']
 
 def getVideoDuration(videoId):
     searchUrl = "https://www.googleapis.com/youtube/v3/videos?id=" + videoId + "&key=" + DEVELOPER_KEY + "&part=contentDetails"
@@ -89,6 +74,3 @@ def downloadYoutube(yt_id, filename):
     proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
     tmp = proc.stdout.read()
     #-------->>>>>>>><CONTROLLO TRACCIA MUTA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<---------------
-
-# link = searchYoutube(name)
-# downloadYoutube(link)

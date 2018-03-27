@@ -1,1 +1,1 @@
-__all__ = ['log', 'spotify', 'youtube']
+__all__ = ['log', 'Spotify.py', 'youtube']

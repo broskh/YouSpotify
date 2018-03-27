@@ -1,11 +1,10 @@
-#!/usr/bin/python
-##########!/usr/bin/env python3
+#!/usr/bin/python3
 
 import argparse
 import os
 import taglib
 
-from util import log, spotify, youtube
+from util import log, Spotify, youtube
 
 # def main():
 # Parse arguments.
@@ -22,15 +21,14 @@ args = parser.parse_args()
 
 # Log into the Spotify API.
 if args.token:
-    spotify = spotify(args.token)
+    spotify = Spotify(args.token)
 else:
-    spotify = spotify.authorize(client_id='5c098bcc800e45d49e476265bc9b6934', scope='playlist-read-private')
+    spotify = Spotify.authorize(client_id='5c098bcc800e45d49e476265bc9b6934', scope='playlist-read-private')
 
 # Get the ID of the logged in user.
-log.print('Logged in as {display_name} ({id})'.format(**spotify.getUser()))
+log.print_console("LOGGING", 'Logged in as {display_name} ({id})'.format(**spotify.get_user()))
 
-playlists = spotify.getPlaylists()
-log.
+playlists = spotify.get_user_playlists()
 i = 0
 for playlist in playlists:
     print(str(i) + ") " + playlist['name'])
@@ -53,7 +51,7 @@ for track in playlist_scelta['tracks']:
                     break
     if not trovato:
         for filename in os.listdir(youtube.MUSIC_FOLDER):
-            if filename.lower().endswith(('.mp3')):
+            if filename.lower().endswith('.mp3'):
                 song = taglib.File(youtube.MUSIC_FOLDER + filename)
                 if 'TITLE' in song.tags:
                     if track['track']['name'] in song.tags['TITLE'][0]:
@@ -71,11 +69,12 @@ for track in playlist_scelta['tracks']:
                            + track['track']['name']
                 youtube.downloadYoutube(video, filename)
                 track['file_path'] = filename + ".mp3"
-                spotify.tagFile(track)
+                spotify.tag_mp3_file(track)
                 trovato = True
                 break
-    if not (trovato):
+    if not trovato:
         not_found.append(track)
+
 
 for track in ambiguos:
     scelta = input("Il brano della playlist: {titolo: " + track['track']['name'] + " , artisti: " +
@@ -85,7 +84,7 @@ for track in ambiguos:
         track['file_path'] = ""
         not_found.append(track)
     else:
-        spotify.tagFile(track)
+        spotify.tag_mp3_file(track)
 for track in not_found:
     print("Il brano della playlist: {titolo: " + track['track']['name'] + " , artisti: " +
           ', '.join([artist['name'] for artist in track['track']['artists']]) + "} non trovata")
@@ -93,20 +92,21 @@ for track in not_found:
     print("2) Indica il video youtube dal quale estrarre la canzone")
     print("3) Rimuovi la canzone dalla playlist")
     answer = False
-    while answer == False:
+    while not answer:
         scelta = input("Scegli un opzione: ")
         scelta = int(scelta)
         if scelta == 1:
             answer = True
             track['file_path'] = input("Nome del file: ")
-            spotify.tagFile(track)
+            spotify.tag_mp3_file(track)
         elif scelta == 2:
             answer = True
-            filename = ', '.join([artist['name'] for artist in track['track']['artists']]) + " - " + track['track']['name']
+            artisti = ', '.join([artist['name'] for artist in track['track']['artists']])
+            filename = artisti + " - " + track['track']['name']
             codice_yt = input("Inserisci il codice del video youtube: ")
             youtube.downloadYoutube(codice_yt, filename)
             track['file_path'] = filename + ".mp3"
-            spotify.tagFile(track)
+            spotify.tag_mp3_file(track)
         elif scelta == 3:
             playlist_scelta.remove(track)
         else:
