@@ -1,17 +1,16 @@
 import codecs
+import eyed3
 import http.client
 import http.server
 import json
 import re
-import taglib
-import eyed3
-from urllib.request import urlopen, Request
-from util import log, youtube
 from sys import exit
+import taglib
+import time
 import urllib.error
 import urllib.parse
+import urllib.request
 import webbrowser
-import time
 
 
 class Spotify:
@@ -21,8 +20,10 @@ class Spotify:
         self.user = self.get('me')
 
     # Gets a resource from the Spotify API and returns the object.
-    def get(self, url, params={}, tries=3):
+    def get(self, url, params=None, tries=3):
         # Construct the correct URL.
+        if params is None:
+            params = {}
         if not url.startswith('https://api.spotify.com/v1/'):
             url = 'https://api.spotify.com/v1/' + url
         if params:
@@ -44,7 +45,9 @@ class Spotify:
 
     # The Spotify API breaks long lists into multiple pages. This method automatically
     # fetches all pages and joins them, returning in a single list of objects.
-    def get_list(self, url, params={}):
+    def get_list(self, url, params=None):
+        if params is None:
+            params = {}
         response = self.get(url, params)
         items = response['items']
         while response['next']:
@@ -76,21 +79,21 @@ class Spotify:
 
     # Add all metadata tags to mp3 file linked to the track
     def tag_mp3_file(self, track):
-        fullAlbum = self.get_full_album(track['track']['album'])
-        song = taglib.File(youtube.MUSIC_FOLDER + track['file_path'])
+        full_album = self.get_full_album(track['track']['album'])
+        song = taglib.File(track['file_path'])
         song.tags['TITLE'] = track['track']['name']
         song.tags['ARTIST'] = ', '.join([artist['name'] for artist in track['track']['artists']])
         song.tags['ALBUM'] = track['track']['album']['name']
         song.tags['TRACKNUMBER'] = str(track['track']['track_number']) + "/" + str(
-            fullAlbum['tracks']['items'][-1]['track_number'])
+            full_album['tracks']['items'][-1]['track_number'])
         song.tags['DISCNUMBER'] = str(track['track']['disc_number'])
         song.tags['COMMENT'] = track['track']['uri']
-        song.tags['GENRE'] = ', '.join(fullAlbum['genres'])
+        song.tags['GENRE'] = ', '.join(full_album['genres'])
         song.tags['DATE'] = track['track']['album']['release_date']
         song.tags['ALBUMARTISTS'] = ', '.join([artist['name'] for artist in track['track']['album']['artists']])
         song.save()
-        song = eyed3.load(youtube.MUSIC_FOLDER + track['file_path'])
-        image = urlopen(track['track']['album']['images'][0]['url'])
+        song = eyed3.load(track['file_path'])
+        image = urllib.request.urlopen(track['track']['album']['images'][0]['url'])
         song.tag.images.set(3, image.read(), 'image/jpeg')
         song.tag.save()
 

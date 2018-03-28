@@ -1,9 +1,7 @@
-#!/usr/bin/python
+from googleapiclient.discovery import build
+import json
 import re
 import subprocess
-from googleapiclient.discovery import build
-
-import json
 import urllib
 
 # Set DEVELOPER_KEY to the API key value from the APIs & auth > Registered apps
@@ -13,41 +11,41 @@ import urllib
 DEVELOPER_KEY = "AIzaSyDOZnawRC1wEPErZmSyLYWdTplXKX3Q_oo"
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
+MAX_VIDEOS_RESULT = 15
 
-MUSIC_FOLDER = "/home/broskh/Musica/"
 
 def youtube_search(track):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
                     developerKey=DEVELOPER_KEY, cache_discovery=False)
 
-    textToSearch = '{name}\t{artists}\t'.format(
+    text_to_search = '{name}\t{artists}\t'.format(
         name=track['track']['name'],
         artists=', '.join([artist['name'] for artist in track['track']['artists']])
     )
 
-  # Call the search.list method to retrieve results matching the specified
-  # query term.
+    # Call the search.list method to retrieve results matching the specified query term.
     search_response = youtube.search().get_list(
-            q=textToSearch,
+            q=text_to_search,
             part="id,snippet",
-            maxResults=15#20
+            maxResults=MAX_VIDEOS_RESULT
         ).execute()
 
     videos = []
-  # Add each result to the appropriate list, and then display the lists of
-  # matching videos, channels, and playlists.
+    # Add each result to the appropriate list, and then display the lists of matching videos, channels, and playlists.
     for search_result in search_response.get("items", []):
         if search_result["id"]["kind"] == "youtube#video":
             videos.append("%s" % (search_result["id"]["videoId"]))
     return videos
 
-def getVideoDuration(videoId):
-    searchUrl = "https://www.googleapis.com/youtube/v3/videos?id=" + videoId + "&key=" + DEVELOPER_KEY + "&part=contentDetails"
-    response = urllib.request.urlopen(searchUrl).read().decode('utf-8')
+
+def get_video_duration(video_id):
+    search_url = "https://www.googleapis.com/youtube/v3/videos?id=" + video_id + "&key=" + \
+                DEVELOPER_KEY + "&part=contentDetails"
+    response = urllib.request.urlopen(search_url).read().decode('utf-8')
     data = json.loads(response)
     all_data = data['items']
-    contentDetails = all_data[0]['contentDetails']
-    duration = contentDetails['duration']
+    content_details = all_data[0]['contentDetails']
+    duration = content_details['duration']
     min_regex = re.compile("[0-9]+(?=M)")
     min_search = min_regex.search(duration)
     sec_regex = re.compile("[0-9]+(?=S)")
@@ -62,15 +60,10 @@ def getVideoDuration(videoId):
         seconds = 0
     return minutes*60000 + seconds*1000
 
-def downloadYoutube(yt_id, filename):
-    """ downloading the track """
+
+def download_youtube(yt_id, filename):
     link = "https://www.youtube.com/watch?v=" + yt_id
-    path = MUSIC_FOLDER + filename + ".%(ext)s"
-    # p = Popen(['bash'], stdin=PIPE, stdout=PIPE)
-    command = 'youtube-dl -o \"' + path + '\" --extract-audio --audio-format mp3 ' + link + '\n';
-    # print("COMMAND DOWNLOAD: " + command)
-    # p.stdin.write(command.encode('utf-8'))
-    # print(p.stdout.readline())
+    path = filename + ".%(ext)s"
+    command = 'youtube-dl -o \"' + path + '\" --extract-audio --audio-format mp3 ' + link + '\n'
     proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-    tmp = proc.stdout.read()
-    #-------->>>>>>>><CONTROLLO TRACCIA MUTA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<---------------
+    proc.stdout.read()
