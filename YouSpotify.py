@@ -9,6 +9,8 @@ MUSIC_FOLDER = "/home/broskh/Musica/"
 
 
 def main():
+    log.print_log("-------", "-------")
+    log.print_log("START", "")
     # Parse arguments.
     parser = argparse.ArgumentParser(description='Exports your Spotify playlists. By default, opens a browser window '
                                                  + 'to authorize the Spotify Web API, but you can also manually specify'
@@ -17,14 +19,12 @@ def main():
                                                                + '`playlist-read-private` permission)')
     args = parser.parse_args()
 
-    # Log into the Spotify API.
     if args.token:
         spotify = Spotify.Spotify(args.token)
     else:
         spotify = Spotify.authorize(client_id='5c098bcc800e45d49e476265bc9b6934', scope='playlist-read-private')
 
-    # Get the ID of the logged in user.
-    log.print_console("LOGGING", 'Logged in as {display_name} ({id})'.format(**spotify.get_user()))
+    log.print_console("LOGGED IN", '{id}'.format(**spotify.get_user()))
 
     playlists = spotify.get_user_playlists()
     i = 0
@@ -32,12 +32,13 @@ def main():
         print(str(i) + ") " + playlist['name'])
         i += 1
     choice = input("Scegli la playlist che vuoi scaricare: ")
-    choise_playlist = playlists[int(choice)]
+    playlist_chosen = playlists[int(choice)]
+    log.print_console("PLAYLIST SCELTA", playlist_chosen['name'])
 
     ambiguos = []
     not_found = []
 
-    for track in choise_playlist['tracks']:
+    for track in playlist_chosen['tracks']:
         found = None
         for filename in os.listdir(MUSIC_FOLDER):
             if filename.lower().endswith('.mp3'):
@@ -46,6 +47,8 @@ def main():
                     if song.tags['COMMENT'][0] == track['track']['uri']:
                         track['file_path'] = MUSIC_FOLDER + filename
                         found = True
+                        log.print_console("TRACCIA TROVATA", "traccia \'" + track['track']['name'] +
+                                          "\' trovata nella cartella Musica")
                         break
         if not found:
             for filename in os.listdir(MUSIC_FOLDER):
@@ -69,6 +72,7 @@ def main():
                     track['file_path'] = filename + ".mp3"
                     spotify.tag_mp3_file(track)
                     found = True
+                    log.print_console("TRACCIA TROVATA", "traccia \'" + track['track']['name'] + "\' scaricata da youtube")
                     break
         if not found:
             not_found.append(track)
@@ -82,10 +86,11 @@ def main():
             not_found.append(track)
         else:
             spotify.tag_mp3_file(track)
+            log.print_console("TRACCIA TROVATA", "traccia \'" + track['track']['name'] + "\' trovata nella cartella Musica")
     for track in not_found:
         print("Il brano della playlist: {titolo: " + track['track']['name'] + " , artisti: " +
               ', '.join([artist['name'] for artist in track['track']['artists']]) + "} non trovata")
-        print("1) Indica il file all'interno del filesystem")
+        print("1) Indica il nome del file all'interno della cartella musica")
         print("2) Indica il video youtube dal quale estrarre la canzone")
         print("3) Rimuovi la canzone dalla playlist")
         answer = False
@@ -97,6 +102,8 @@ def main():
                 file = input("Nome del file: ")
                 track['file_path'] = MUSIC_FOLDER + file
                 spotify.tag_mp3_file(track)
+                log.print_console("TRACCIA TROVATA",
+                                  "traccia \'" + track['track']['name'] + "\' trovata nella cartella Musica")
             elif choice == 2:
                 answer = True
                 artisti = ', '.join([artist['name'] for artist in track['track']['artists']])
@@ -105,15 +112,21 @@ def main():
                 youtube.download_youtube(codice_yt, filename)
                 track['file_path'] = filename + ".mp3"
                 spotify.tag_mp3_file(track)
+                log.print_console("TRACCIA TROVATA", "traccia \'" + track['track']['name'] + "\' scaricata da youtube")
             elif choice == 3:
-                choise_playlist.remove(track)
+                answer = True
+                playlist_chosen.remove(track)
+                log.print_console("TRACK RIMOSSA", "traccia \'" + track['track']['name'] + "\' rimossa dalla playlist")
             else:
                 print("Scelta errata")
 
-    of = open(MUSIC_FOLDER + choise_playlist['name'] + ".m3u", 'w')
-    for track in choise_playlist['tracks']:
+    playlist_file = playlist_chosen['name'] + ".m3u"
+    of = open(MUSIC_FOLDER + playlist_file, 'w')
+    for track in playlist_chosen['tracks']:
         of.write(track['file_path'] + "\n")
     of.close()
+    log.print_console("FINE", "playlist \'" + playlist_chosen['name'] + "\' creata correttamente nel file "
+                      + playlist_file)
 
 
 if __name__ == '__main__':

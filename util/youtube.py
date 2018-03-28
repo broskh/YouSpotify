@@ -4,6 +4,8 @@ import re
 import subprocess
 import urllib
 
+from util import log
+
 # Set DEVELOPER_KEY to the API key value from the APIs & auth > Registered apps
 # tab of
 #   https://cloud.google.com/console
@@ -24,11 +26,14 @@ def youtube_search(track):
     )
 
     # Call the search.list method to retrieve results matching the specified query term.
-    search_response = youtube.search().get_list(
+    search_string = youtube.search().list(
             q=text_to_search,
             part="id,snippet",
             maxResults=MAX_VIDEOS_RESULT
-        ).execute()
+        )
+    log.print_log('YOUTUBE SEARCH', search_string)
+    search_response = search_string.execute()
+    log.print_log('YOUTUBE SEARCH RESULT', search_response)
 
     videos = []
     # Add each result to the appropriate list, and then display the lists of matching videos, channels, and playlists.
@@ -41,6 +46,7 @@ def youtube_search(track):
 def get_video_duration(video_id):
     search_url = "https://www.googleapis.com/youtube/v3/videos?id=" + video_id + "&key=" + \
                 DEVELOPER_KEY + "&part=contentDetails"
+    log.print_debug("DURATION REQUEST", search_url)
     response = urllib.request.urlopen(search_url).read().decode('utf-8')
     data = json.loads(response)
     all_data = data['items']
@@ -58,12 +64,15 @@ def get_video_duration(video_id):
         seconds = int(sec_search.group(0))
     else:
         seconds = 0
-    return minutes*60000 + seconds*1000
+    duration = minutes*60000 + seconds*1000
+    log.print_log("DURATION", video_id + ": " + str(duration))
+    return duration
 
 
 def download_youtube(yt_id, filename):
     link = "https://www.youtube.com/watch?v=" + yt_id
     path = filename + ".%(ext)s"
+    log.print_console("DOWNLOAD START", yt_id + " video")
     command = 'youtube-dl -o \"' + path + '\" --extract-audio --audio-format mp3 ' + link + '\n'
     proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
     proc.stdout.read()

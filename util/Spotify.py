@@ -12,6 +12,8 @@ import urllib.parse
 import urllib.request
 import webbrowser
 
+from util import log
+
 
 class Spotify:
     # Requires an OAuth token.
@@ -38,9 +40,9 @@ class Spotify:
                 reader = codecs.getreader('utf-8')
                 return json.load(reader(res))
             except Exception as err:
-                # log.print('Couldn\'t load URL: {} ({})'.format(url, err))
+                log.print_console("SPOTIFY REQUEST ERROR", 'Couldn\'t load URL: {} ({})'.format(url, err))
                 time.sleep(2)
-                # log.print('Trying again...')
+                log.print_console("SPOTIFY REQUEST", 'Trying again...')
         exit(1)
 
     # The Spotify API breaks long lists into multiple pages. This method automatically
@@ -61,10 +63,11 @@ class Spotify:
 
     # Get the spotify user's playlists
     def get_user_playlists(self):
+        log.print_console("PLAYLISTS","Ricerca in corso...")
         # List all playlists and all track in each playlist.
         playlists = self.get_list('users/{user_id}/playlists'.format(user_id=self.user['id']), {'limit': 50})  # 50
         for playlist in playlists:
-            # log.print('Loading playlist: {name} ({tracks[total]} songs)'.format(**playlist))
+            log.print_log('LOADING PLAYLIST', '{name} ({tracks[total]} songs)'.format(**playlist))
             playlist['tracks'] = self.get_list(playlist['tracks']['href'], {'limit': 100})  # 100
         return playlists
 
@@ -96,6 +99,7 @@ class Spotify:
         image = urllib.request.urlopen(track['track']['album']['images'][0]['url'])
         song.tag.images.set(3, image.read(), 'image/jpeg')
         song.tag.save()
+        log.print_log("FILE TAGGED", track['file_path'])
 
     class _AuthorizationServer(http.server.HTTPServer):
         def __init__(self, host, port):
