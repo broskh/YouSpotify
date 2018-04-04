@@ -1,14 +1,24 @@
 #!/usr/bin/python3
 import argparse
+import ast
+import json
 import os
 import taglib
 
 from util import *
 
-MUSIC_FOLDER = "/home/broskh/Musica/"
+CONFIG_FILE = "config.json"
+
+DEFAULT_MUSIC_FOLDER = "/home/broskh/Musica/"
 
 
 def main():
+    config = import_config()
+    log.set_log_file(config['LOG_FILE'])
+    if config['DEBUG']:
+        log.enable_debug()
+    else:
+        log.disable_debug()
     log.print_log("-------", "-------")
     log.print_log("START", "")
     # Parse arguments.
@@ -40,23 +50,23 @@ def main():
 
     for track in playlist_chosen['tracks']:
         found = None
-        for filename in os.listdir(MUSIC_FOLDER):
+        for filename in os.listdir(config['MUSIC_FOLDER']):
             if filename.lower().endswith('.mp3'):
-                song = taglib.File(MUSIC_FOLDER + filename)
+                song = taglib.File(config['MUSIC_FOLDER'] + filename)
                 if 'COMMENT' in song.tags:
                     if song.tags['COMMENT'][0] == track['track']['uri']:
-                        track['file_path'] = MUSIC_FOLDER + filename
+                        track['file_path'] = config['MUSIC_FOLDER'] + filename
                         found = True
                         log.print_console("TRACCIA TROVATA", "traccia \'" + track['track']['name'] +
                                           "\' trovata nella cartella Musica")
                         break
         if not found:
-            for filename in os.listdir(MUSIC_FOLDER):
+            for filename in os.listdir(config['MUSIC_FOLDER']):
                 if filename.lower().endswith('.mp3'):
-                    song = taglib.File(MUSIC_FOLDER + filename)
+                    song = taglib.File(config['MUSIC_FOLDER'] + filename)
                     if 'TITLE' in song.tags:
                         if track['track']['name'] in song.tags['TITLE'][0]:
-                            track['file_path'] = MUSIC_FOLDER + filename
+                            track['file_path'] = config['MUSIC_FOLDER'] + filename
                             ambiguos.append(track)
                             found = True
                             break
@@ -66,7 +76,7 @@ def main():
                 duration_yt = youtube.get_video_duration(video)
                 if (duration_yt >= track['track']['duration_ms'] - 3000) and \
                         (duration_yt <= track['track']['duration_ms'] + 3000):  # match con video di 3 secondi +- lunghi
-                    filename = MUSIC_FOLDER + ', '.join([artist['name'] for artist in track['track']['artists']]) + \
+                    filename = config['MUSIC_FOLDER'] + ', '.join([artist['name'] for artist in track['track']['artists']]) + \
                                " - " + track['track']['name']
                     youtube.download_youtube(video, filename)
                     track['file_path'] = filename + ".mp3"
@@ -100,14 +110,14 @@ def main():
             if choice == 1:
                 answer = True
                 file = input("Nome del file: ")
-                track['file_path'] = MUSIC_FOLDER + file
+                track['file_path'] = config['MUSIC_FOLDER'] + file
                 spotify.tag_mp3_file(track)
                 log.print_console("TRACCIA TROVATA",
                                   "traccia \'" + track['track']['name'] + "\' trovata nella cartella Musica")
             elif choice == 2:
                 answer = True
                 artisti = ', '.join([artist['name'] for artist in track['track']['artists']])
-                filename = MUSIC_FOLDER + artisti + " - " + track['track']['name']
+                filename = config['MUSIC_FOLDER'] + artisti + " - " + track['track']['name']
                 codice_yt = input("Inserisci il codice del video youtube: ")
                 youtube.download_youtube(codice_yt, filename)
                 track['file_path'] = filename + ".mp3"
@@ -121,12 +131,29 @@ def main():
                 print("Scelta errata")
 
     playlist_file = playlist_chosen['name'] + ".m3u"
-    of = open(MUSIC_FOLDER + playlist_file, 'w')
+    of = open(config['MUSIC_FOLDER'] + playlist_file, 'w')
     for track in playlist_chosen['tracks']:
         of.write(track['file_path'] + "\n")
     of.close()
     log.print_console("FINE", "playlist \'" + playlist_chosen['name'] + "\' creata correttamente nel file "
                       + playlist_file)
+
+
+# Import imformation from config file and opportunely set variables
+def import_config():
+    config = {}
+    if os.path.isfile(CONFIG_FILE):
+        json_file = open(CONFIG_FILE, 'r')
+        config = json.load(json_file)
+
+    else:
+        config['MUSIC_FOLDER'] = DEFAULT_MUSIC_FOLDER
+        config['LOG_FILE'] = log.DEFAULT_LOG_FILE
+        config['DEBUG'] = log.DEFAULT_DEBUG
+        json_file = open(CONFIG_FILE, 'w')
+        json_file.write(json.dumps(config))
+    json_file.close()
+    return config
 
 
 if __name__ == '__main__':

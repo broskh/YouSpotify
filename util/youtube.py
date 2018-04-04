@@ -33,7 +33,7 @@ def youtube_search(track):
         )
     log.print_log('YOUTUBE SEARCH', search_string)
     search_response = search_string.execute()
-    log.print_log('YOUTUBE SEARCH RESULT', search_response)
+    log.print_debug('YOUTUBE SEARCH RESULT', search_response)
 
     videos = []
     # Add each result to the appropriate list, and then display the lists of matching videos, channels, and playlists.

@@ -105,3 +105,6 @@ ENV/
 
 # Log files
 *.log
+
+# Config files
+config.json

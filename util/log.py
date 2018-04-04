@@ -1,8 +1,8 @@
 import sys
 import time
 
-debug = False
-logFile = "YouSpotify.log"
+DEFAULT_LOG_FILE = "YouSpotify.log"
+DEFAULT_DEBUG = False
 
 
 # Print the debug string in console and in log file if debug value is "True"
@@ -19,7 +19,7 @@ def log_string(tag, string):
 
 # Print the log string in the log file
 def print_log(tag, string):
-    of = open(logFile, 'a')
+    of = open(log_file, 'a')
     of.write(log_string(tag, string))
     of.close()
 
@@ -51,5 +51,5 @@ def disable_debug():
 
 # Set log file
 def set_log_file(file):
-    global logFile
-    logFile = file
+    global log_file
+    log_file = file
